@@ -1,0 +1,10 @@
+{
+  "name": "xrp-ledger-to-mongodb",
+  "version": "1.0.0",
+  "author": "WietseWind <mail@wietse.com>",
+  "dependencies": {
+    "JSONStream": "^1.3.2",
+    "mongodb": "^3.0.3",
+    "ws": "^4.1.0"
+  }
+}
