@@ -29,6 +29,7 @@ outputStream.on(
   "finish",
   function handleFinish () {
     console.log('Done! wrote records:', records)
+    collection.deleteMany({ '__lastLedger.seq' : { $ne: ledger.seq } })
     mongo.close()
     process.exit(0)
   }
@@ -69,7 +70,7 @@ ws.on('message', function incoming (data) {
           }, [
             [ '_id', 'asc' ]
           ], {
-            $set: Object.assign(i, { __lastUpdate: new Date() })
+            $set: Object.assign(i, { __lastUpdate: new Date(), __lastLedger: ledger, Amount: parseInt(i.Amount) })
           }, {
             upsert: true
           }, function (err, result) {
