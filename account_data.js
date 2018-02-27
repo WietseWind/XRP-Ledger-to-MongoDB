@@ -69,7 +69,7 @@ ws.on('message', function incoming (data) {
           }, [
             [ '_id', 'asc' ]
           ], {
-            $set: Object.assign(i, { __lastUpdate: new Date() })
+            $set: Object.assign(i, { __lastUpdate: new Date(), Balance: parseInt(i.Balance) })
           }, {
             upsert: true
           }, function (err, result) {
