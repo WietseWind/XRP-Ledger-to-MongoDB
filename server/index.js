@@ -33,6 +33,21 @@ router.get('/', function(req, res) {
 
 app.use('/api', router)
 
+router.route('/escrowlist').get(function(req, res) {
+  db.collection('escrow').find({}).project({
+    _id: false,
+    Account: true,
+    Amount: true,
+    Destination: true,
+    DestinationTag: true,
+    FinishAfter: true,
+    CancelAfter: true,
+    Condition: true
+  }).toArray((err, data) => {
+    res.json(data)
+  })
+})
+
 router.route('/richlist').get(function(req, res) {
   var responseSent = false
   var requested = 0
