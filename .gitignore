@@ -1,0 +1,5 @@
+run_account_data.log
+node_modules/
+package-lock.json
+account_data.json
+account_data.log
