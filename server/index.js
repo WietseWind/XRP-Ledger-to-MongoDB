@@ -33,7 +33,115 @@ router.get('/', function(req, res) {
 
 app.use('/api', router)
 
-router.route('/richlist-index/:account').get(function(req, res) {
+router.route('/richlist').get(function(req, res) {
+  var responseSent = false
+  var requested = 0
+  var responded = 0
+  var response = {
+    error: false,
+    message: '',
+    accounts: 0,
+    datamoment: '',
+    has: {
+      has1000000000: null,
+      has500000000: null,
+      has100000000: null,
+      has20000000: null,
+      has10000000: null,
+      has5000000: null,
+      has1000000: null,
+      has500000: null,
+      has100000: null,
+      has50000: null,
+      has10000: null,
+      has5000: null,
+      has1000: null,
+      has500: null
+    },
+    pct: {
+      pct1: null,
+      pct2: null,
+      pct3: null,
+      pct4: null,
+      pct5: null,
+      pct10: null
+    }
+  }
+  var responseTimeout = setTimeout(() => {
+    clearTimeout(responseTimeout)
+    response.error = true
+    response.message = 'Timeout'
+    res.json(response)
+  }, max_processing_seconds * 1000 * 5)
+
+  var sendResponse = function () {
+    if (!responseSent && requested === responded) {
+      clearTimeout(responseTimeout)
+      res.json(response)
+    }
+  }
+
+  requested++
+  collection.count({}, function(error, numOfDocs) {
+    responded++
+    response.accounts = numOfDocs
+
+    Object.keys(response.pct).forEach((f) => {
+        if (f.match(/^pct[0-9]+$/)) {
+          var amount = parseInt(f.substring(3))
+          var amountpct = Math.ceil(numOfDocs / 100 * amount)
+          requested++
+          collection.aggregate([
+            { $sort: { Balance: -1 } },
+            { $limit: amountpct },
+            { $group: {
+              _id: 1,
+              minBalance: { $min: '$Balance' },
+              minLastUpdate: { $max: '$__lastUpdate' }
+            } }
+          ]).toArray(function(error, d) {
+            response.datamoment = d[0].minLastUpdate
+            responded++
+            response.pct[f] = d[0].minBalance
+            sendResponse()
+          })
+          lastMax = amount
+        }
+      })
+  })
+  var lastMax = null
+  Object.keys(response.has).forEach((f) => {
+    if (f.match(/^has[0-9]+$/)) {
+      var amount = parseInt(f.substring(3))
+      var query = {
+        Balance: { $gte: amount }
+      }
+      if (lastMax !== null) {
+        query.Balance.$lt = lastMax
+      }
+      requested++
+      collection.aggregate([
+        { $match: query },
+        { $group: {
+          _id: 1,
+          count: { $sum : 1 },
+          balanceSum: { $sum : '$Balance' }
+        } }
+      ]).toArray(function(error, d) {
+        responded++
+        response.has[f] = {
+          accounts: d[0].count,
+          balanceSum: d[0].balanceSum,
+        }
+        sendResponse()
+      })
+      lastMax = amount
+    }
+  })
+})
+
+router.route('/richlist-index/:account/:ignoregt?').get(function(req, res) {
+  var responseSent = false
   var response = {
     error: false,
     query: req.params.account,
@@ -57,23 +165,32 @@ router.route('/richlist-index/:account').get(function(req, res) {
     res.json({ error: true, message: 'Timeout' })
   }, max_processing_seconds * 1000)
 
-  collection.count({}, function(error, numOfDocs) {
+  var countQuery = {}
+  // if (req.params.ignoregt !== null && typeof req.params.ignoregt !== 'undefined' && req.params.ignoregt.match(/^[0-9]+$/)) {
+  //   var ignoreGt = parseInt(req.params.ignoregt)
+  //   countQuery.Balance = { $lt: ignoreGt }
+  // }
+  // console.log(countQuery)
+  collection.count(countQuery, function(error, numOfDocs) {
     response.numAccounts = numOfDocs
     collection.find({ Account: req.params.account.trim() }, { Balance: true }).toArray(function (e, d) {
       if (e) {
+        clearTimeout(responseTimeout)
         res.json({ error: true, message: 'Error', details: e })
       } else {
         if (d.length < 1) {
+          clearTimeout(responseTimeout)
           res.json({ error: true, message: 'Cannot find account' })
         } else {
           response.account = d[0]
           var sendResponse = function () {
-            if (response.lt.count !== null && response.gt.count !== null && response.eq.count !== null) {
+            if (!responseSent && response.lt.count !== null && response.gt.count !== null && response.eq.count !== null) {
               clearTimeout(responseTimeout)
               response.lt.percentage = Math.ceil(response.lt.count / response.numAccounts * decimals) / decimals
               response.gt.percentage = Math.ceil(response.gt.count / response.numAccounts * decimals) / decimals
               response.eq.percentage = Math.ceil(response.eq.count / response.numAccounts * decimals) / decimals
               res.json(response)
+              responseSent = true
             }
           }
           collection.find({ Balance: { $lt : d[0].Balance } }, { _id: false, Balance: true }, { Balance: -1 }).count(false, function(e, c) {
