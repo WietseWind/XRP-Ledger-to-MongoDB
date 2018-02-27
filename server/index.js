@@ -50,7 +50,7 @@ router.route('/richlist-index/:account').get(function(req, res) {
   }, max_processing_seconds * 1000)
 
   collection.count({}, function(error, numOfDocs) {
-    response.accounts = numOfDocs
+    response.numAccounts = numOfDocs
     collection.find({ Account: req.params.account.trim() }, { Balance: true }).toArray(function (e, d) {
       if (e) {
         res.json({ error: true, message: 'Error', details: e })
@@ -62,9 +62,9 @@ router.route('/richlist-index/:account').get(function(req, res) {
           var sendResponse = function () {
             if (response.lt.count !== null && response.gt.count !== null && response.eq.count !== null) {
               clearTimeout(responseTimeout)
-              response.lt.percentage = Math.ceil(response.lt.count / response.accounts * decimals) / decimals
-              response.gt.percentage = Math.ceil(response.gt.count / response.accounts * decimals) / decimals
-              response.eq.percentage = Math.ceil(response.eq.count / response.accounts * decimals) / decimals
+              response.lt.percentage = Math.ceil(response.lt.count / response.numAccounts * decimals) / decimals
+              response.gt.percentage = Math.ceil(response.gt.count / response.numAccounts * decimals) / decimals
+              response.eq.percentage = Math.ceil(response.eq.count / response.numAccounts * decimals) / decimals
               res.json(response)
             }
           }
