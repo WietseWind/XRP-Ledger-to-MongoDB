@@ -28,9 +28,9 @@ app.use('/api', router)
 router.route('/richlist-index/:account').get(function(req, res) {
   var response = {
     error: false,
-    account: req.params.account,
-    details: null,
-    accounts: 0,
+    query: req.params.account,
+    account: null,
+    numAccounts: 0,
     lt: {
       count: null,
       percentage: 0
@@ -58,7 +58,7 @@ router.route('/richlist-index/:account').get(function(req, res) {
         if (d.length < 1) {
           res.json({ error: true, message: 'Cannot find account' })
         } else {
-          response.details = d[0]
+          response.account = d[0]
           var sendResponse = function () {
             if (response.lt.count !== null && response.gt.count !== null && response.eq.count !== null) {
               clearTimeout(responseTimeout)
