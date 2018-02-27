@@ -29,7 +29,7 @@ outputStream.on(
   "finish",
   function handleFinish () {
     console.log('Done! wrote records:', records)
-    client.close()
+    mongo.close()
     process.exit(0)
   }
 )
