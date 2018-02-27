@@ -7,10 +7,18 @@ const express = require('express')
 const decimals = 1000000
 const max_processing_seconds = 5
 
+var allowCrossDomain = function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*')
+    res.header('Access-Control-Allow-Methods', 'GET')
+    res.header('Access-Control-Allow-Headers', 'Content-Type')
+    next()
+}
+
 var app = express()
 var bodyParser = require('body-parser')
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
+app.use(allowCrossDomain)
 
 var port = process.env.PORT || 4000
 
