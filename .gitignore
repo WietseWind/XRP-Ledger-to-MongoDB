@@ -7,3 +7,5 @@ run_escrow_data.log
 escrow_data.json
 escrow_data.log
 watch.sh
+/server/index.log
+/server/run.log
