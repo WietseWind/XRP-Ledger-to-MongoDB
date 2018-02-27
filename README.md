@@ -4,4 +4,4 @@ Ugly but highly effective scripts to query the XRP ledger for info. Dumps the in
 
 ## Thanks
 
-@Kakoyla for telling me about the `ledger_info` method! 
+@Kakoyla for telling me about the `ledger_data` method! 
