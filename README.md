@@ -2,6 +2,10 @@
 
 Ugly but highly effective scripts to query the XRP ledger for info. Dumps the info into a `json` files and MongoDB.
 
+Frontend: https://github.com/WietseWind/XRP-Stats-Frontend/blob/master/README.md
+
+Running at: https://xrpstats.xrptipbot.com/
+
 ## Thanks
 
 @Kakoyla for telling me about the `ledger_data` method! 
