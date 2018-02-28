@@ -71,7 +71,8 @@ router.route('/richlist').get(function(req, res) {
       has10000: null,
       has5000: null,
       has1000: null,
-      has500: null
+      has500: null,
+      has0: null
     },
     pct: {
       pct1: null,
@@ -160,7 +161,8 @@ router.route('/richlist-index/:account/:ignoregt?').get(function(req, res) {
   var response = {
     error: false,
     query: req.params.account,
-    account: null,
+    sum: 0,
+    accounts: [],
     numAccounts: 0,
     lt: {
       count: null,
@@ -188,16 +190,19 @@ router.route('/richlist-index/:account/:ignoregt?').get(function(req, res) {
   // console.log(countQuery)
   collection.count(countQuery, function(error, numOfDocs) {
     response.numAccounts = numOfDocs
-    collection.find({ Account: req.params.account.trim() }, { Balance: true }).toArray(function (e, d) {
+    collection.find({ Account: { $in: req.params.account.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ') } }, { Balance: true }).toArray(function (e, d) {
+      if (req.params.account.trim().match(/^[0-9]+$/)) {
+        response.sum = parseInt(req.params.account)
+      }
       if (e) {
         clearTimeout(responseTimeout)
         res.json({ error: true, message: 'Error', details: e })
       } else {
-        if (d.length < 1) {
+        if (d.length < 1 && response.sum === 0) {
           clearTimeout(responseTimeout)
           res.json({ error: true, message: 'Cannot find account' })
         } else {
-          response.account = d[0]
+          response.accounts = d
           var sendResponse = function () {
             if (!responseSent && response.lt.count !== null && response.gt.count !== null && response.eq.count !== null) {
               clearTimeout(responseTimeout)
@@ -208,15 +213,22 @@ router.route('/richlist-index/:account/:ignoregt?').get(function(req, res) {
               responseSent = true
             }
           }
-          collection.find({ Balance: { $lt : d[0].Balance } }, { _id: false, Balance: true }, { Balance: -1 }).count(false, function(e, c) {
+          if (response.sum === 0) {
+            response.sum = response.accounts.map((a) => {
+              return a.Balance
+            }).reduce((a, b) => {
+              return a + b
+            }, 0)
+          }
+          collection.find({ Balance: { $lt : response.sum } }, { _id: false, Balance: true }, { Balance: -1 }).count(false, function(e, c) {
             response.lt.count = c
             sendResponse()
           })
-          collection.find({ Balance: { $eq : d[0].Balance } }, { _id: false, Balance: true }, { Balance: -1 }).count(false, function(e, c) {
+          collection.find({ Balance: { $eq : response.sum } }, { _id: false, Balance: true }, { Balance: -1 }).count(false, function(e, c) {
             response.eq.count = c
             sendResponse()
           })
-          collection.find({ Balance: { $gt : d[0].Balance } }, { _id: false, Balance: true }, { Balance: -1 }).count(false, function(e, c) {
+          collection.find({ Balance: { $gt : response.sum } }, { _id: false, Balance: true }, { Balance: -1 }).count(false, function(e, c) {
             response.gt.count = c
             sendResponse()
           })
