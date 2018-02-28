@@ -9,3 +9,4 @@ escrow_data.log
 watch.sh
 /server/index.log
 /server/run.log
+/server/dev.js
