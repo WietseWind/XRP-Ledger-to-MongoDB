@@ -48,6 +48,35 @@ router.route('/escrowlist').get(function(req, res) {
   })
 })
 
+router.route('/wallet-toplist/:amount?/:skip?').get(function(req, res) {
+  var amount = 0
+  var skip = 0
+
+  if (typeof req.params.amount !== 'undefined' && req.params.amount && req.params.amount !== null) {
+    amount = parseInt(req.params.amount)
+    if (isNaN(amount) || amount > 999 || amount < 1) {
+      amount = 10
+    }
+  }
+
+  if (typeof req.params.skip !== 'undefined' && req.params.skip && req.params.skip !== null) {
+    skip = parseInt(req.params.skip)
+    if (isNaN(skip) || skip > 999) {
+      skip = 0
+    }
+  }
+
+  collection.find({}).sort({
+    Balance: -1
+  }).project({
+    _id: false,
+    Balance: true,
+    Account: true
+  }).skip(skip).limit(amount).toArray((err, data) => {
+    res.json(data)
+  })
+})
+
 router.route('/richlist').get(function(req, res) {
   var responseSent = false
   var requested = 0
@@ -192,7 +221,12 @@ router.route('/richlist-index/:account/:ignoregt?').get(function(req, res) {
   // console.log(countQuery)
   collection.count(countQuery, function(error, numOfDocs) {
     response.numAccounts = numOfDocs
-    collection.find({ Account: { $in: req.params.account.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ') } }, { Balance: true }).toArray(function (e, d) {
+    collection.find({ Account: { $in: req.params.account.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ') } }).project({
+      Account: true,
+      Balance: true,
+      __lastUpdate: true,
+      Sequence: true
+    }).toArray(function (e, d) {
       if (req.params.account.trim().match(/^[0-9]+$/)) {
         response.sum = parseInt(req.params.account)
       }
@@ -222,15 +256,15 @@ router.route('/richlist-index/:account/:ignoregt?').get(function(req, res) {
               return a + b
             }, 0)
           }
-          collection.find({ Balance: { $lt : response.sum } }, { _id: false, Balance: true }, { Balance: -1 }).count(false, function(e, c) {
+          collection.find({ Balance: { $lt : response.sum } }).project({ _id: false, Balance: true }).sort({ Balance: -1 }).count(false, function(e, c) {
             response.lt.count = c
             sendResponse()
           })
-          collection.find({ Balance: { $eq : response.sum } }, { _id: false, Balance: true }, { Balance: -1 }).count(false, function(e, c) {
+          collection.find({ Balance: { $eq : response.sum } }).project({ _id: false, Balance: true }).sort({ Balance: -1 }).count(false, function(e, c) {
             response.eq.count = c
             sendResponse()
           })
-          collection.find({ Balance: { $gt : response.sum } }, { _id: false, Balance: true }, { Balance: -1 }).count(false, function(e, c) {
+          collection.find({ Balance: { $gt : response.sum } }).project({ _id: false, Balance: true }).sort({ Balance: -1 }).count(false, function(e, c) {
             response.gt.count = c
             sendResponse()
           })
