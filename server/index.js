@@ -75,6 +75,8 @@ router.route('/richlist').get(function(req, res) {
       has0: null
     },
     pct: {
+      pct0p2: null,
+      pct0p5: null,
       pct1: null,
       pct2: null,
       pct3: null,
@@ -103,8 +105,8 @@ router.route('/richlist').get(function(req, res) {
     response.accounts = numOfDocs
 
     Object.keys(response.pct).forEach((f) => {
-        if (f.match(/^pct[0-9]+$/)) {
-          var amount = parseInt(f.substring(3))
+        if (f.match(/^pct[0-9p]+$/)) {
+          var amount = parseFloat(f.substring(3).replace(/p/,'.'))
           var amountpct = Math.ceil(numOfDocs / 100 * amount)
           requested++
           collection.aggregate([
