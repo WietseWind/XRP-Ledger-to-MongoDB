@@ -1,6 +1,7 @@
 const fileSystem = require('fs')
 const JSONStream = require('JSONStream')
 const WebSocket = require('ws')
+// const ws = new WebSocket('wss://rippled.xrptipbot.com')
 const ws = new WebSocket('ws://127.0.0.1')
 const MongoClient = require('mongodb').MongoClient
 
