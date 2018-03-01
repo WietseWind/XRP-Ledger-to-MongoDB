@@ -31,7 +31,7 @@ outputStream.on(
   function handleFinish () {
     console.log('Done! wrote records:', records)
     collection.deleteMany({ '__lastLedger.seq' : { $ne: ledger.seq } })
-    fileSystem.copyFileSync(__dirname + "/" + filename, "/var/www/html/download/" + (new Date().toISOString().replace(/T/, '-').replace(/\..+/, '')) + "." + filename)
+    fileSystem.copyFileSync(__dirname + "/" + filename, "/var/www/html/download/" + (new Date().toISOString().replace(/[:-]/g, '').replace(/\..+/, '')) + "." + filename)
     mongo.close()
     process.exit(0)
   }

@@ -10,3 +10,4 @@ watch.sh
 /server/index.log
 /server/run.log
 /server/dev.js
+/cleanup.sh

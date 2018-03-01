@@ -30,7 +30,7 @@ outputStream.on(
   "finish",
   function handleFinish () {
     console.log('Done! wrote records:', records)
-    fileSystem.copyFileSync(__dirname + "/" + filename, "/var/www/html/download/" + (new Date().toISOString().replace(/T/, '-').replace(/\..+/, '')) + "." + filename)
+    fileSystem.copyFileSync(__dirname + "/" + filename, "/var/www/html/download/" + (new Date().toISOString().replace(/[:-]/g, '').replace(/\..+/, '')) + "." + filename)
     mongo.close()
     process.exit(0)
   }
