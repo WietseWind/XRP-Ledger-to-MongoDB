@@ -5,7 +5,7 @@ const ws = new WebSocket('ws://127.0.0.1')
 const MongoClient = require('mongodb').MongoClient
 const express = require('express')
 const decimals = 1000000
-const max_processing_seconds = 5
+const max_processing_seconds = 15
 
 var allowCrossDomain = function(req, res, next) {
     res.header('Access-Control-Allow-Origin', '*')
@@ -196,16 +196,22 @@ router.route('/richlist-index/:account/:ignoregt?').get(function(req, res) {
     accounts: [],
     numAccounts: 0,
     lt: {
-      count: null,
-      percentage: 0
+      count: 0,
+      percentage: 0,
+      amount: 0,
+      amountpct: 0,
     },
     eq: {
-      count: null,
-      percentage: 0
+      count: 0,
+      percentage: 0,
+      amount: 0,
+      amountpct: 0,
     },
     gt: {
-      count: null,
-      percentage: 0
+      count: 0,
+      percentage: 0,
+      amount: 0,
+      amountpct: 0,
     }
   }
 
@@ -214,11 +220,6 @@ router.route('/richlist-index/:account/:ignoregt?').get(function(req, res) {
   }, max_processing_seconds * 1000)
 
   var countQuery = {}
-  // if (req.params.ignoregt !== null && typeof req.params.ignoregt !== 'undefined' && req.params.ignoregt.match(/^[0-9]+$/)) {
-  //   var ignoreGt = parseInt(req.params.ignoregt)
-  //   countQuery.Balance = { $lt: ignoreGt }
-  // }
-  // console.log(countQuery)
   collection.count(countQuery, function(error, numOfDocs) {
     response.numAccounts = numOfDocs
     collection.find({ Account: { $in: req.params.account.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ') } }).project({
@@ -240,11 +241,17 @@ router.route('/richlist-index/:account/:ignoregt?').get(function(req, res) {
         } else {
           response.accounts = d
           var sendResponse = function () {
-            if (!responseSent && response.lt.count !== null && response.gt.count !== null && response.eq.count !== null) {
+            console.log('SendResponse', response)
+            if (!responseSent && (response.lt.count > 0 || response.gt.count > 0 || response.eq.count > 0)) {
+              console.log(' -- Continue')
               clearTimeout(responseTimeout)
               response.lt.percentage = Math.ceil(response.lt.count / response.numAccounts * decimals) / decimals
               response.gt.percentage = Math.ceil(response.gt.count / response.numAccounts * decimals) / decimals
               response.eq.percentage = Math.ceil(response.eq.count / response.numAccounts * decimals) / decimals
+              var amountSum = response.lt.amount + response.gt.amount + response.eq.amount
+              response.lt.amountpct = Math.ceil(response.lt.amount / amountSum * decimals) / decimals
+              response.gt.amountpct = Math.ceil(response.gt.amount / amountSum * decimals) / decimals
+              response.eq.amountpct = Math.ceil(response.eq.amount / amountSum * decimals) / decimals
               res.json(response)
               responseSent = true
             }
@@ -256,16 +263,19 @@ router.route('/richlist-index/:account/:ignoregt?').get(function(req, res) {
               return a + b
             }, 0)
           }
-          collection.find({ Balance: { $lt : response.sum } }).project({ _id: false, Balance: true }).sort({ Balance: -1 }).count(false, function(e, c) {
-            response.lt.count = c
-            sendResponse()
-          })
-          collection.find({ Balance: { $eq : response.sum } }).project({ _id: false, Balance: true }).sort({ Balance: -1 }).count(false, function(e, c) {
-            response.eq.count = c
-            sendResponse()
-          })
-          collection.find({ Balance: { $gt : response.sum } }).project({ _id: false, Balance: true }).sort({ Balance: -1 }).count(false, function(e, c) {
-            response.gt.count = c
+
+          collection.aggregate([
+            { $sort: { Balance: -1 } },
+            { $group: {
+              _id: { $cond: { if: { $gte : [ "$Balance", response.sum ] }, then: { $cond: { if: { $eq : [ "$Balance", response.sum ] }, then: 'EQ', else: 'GT' } }, else: 'LT' } },
+              amount: { $sum: '$Balance' },
+              count: { $sum: 1 }
+            } }
+          ]).toArray(function(error, d) {
+            d.forEach((ar) => {
+              response[ar._id.toLowerCase()].count = ar.count
+              response[ar._id.toLowerCase()].amount = ar.amount
+            })
             sendResponse()
           })
         }
