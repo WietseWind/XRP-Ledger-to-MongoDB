@@ -5,6 +5,11 @@ const WebSocket = require('ws')
 const ws = new WebSocket('ws://127.0.0.1')
 const MongoClient = require('mongodb').MongoClient
 
+setTimeout(function () {
+  // Kill after 10 minutes on hang
+  process.exit(1) 
+}, 60 * 1000 * 10)
+
 var db = null
 var mongo = null
 var collection = null
