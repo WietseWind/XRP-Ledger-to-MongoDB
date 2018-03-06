@@ -5,7 +5,7 @@ const ws = new WebSocket('ws://127.0.0.1')
 const MongoClient = require('mongodb').MongoClient
 const express = require('express')
 const decimals = 1000000
-const max_processing_seconds = 15
+const max_processing_seconds = 25
 
 var allowCrossDomain = function(req, res, next) {
     res.header('Access-Control-Allow-Origin', '*')
