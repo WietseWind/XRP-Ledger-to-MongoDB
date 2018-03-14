@@ -4,8 +4,9 @@
   "author": "WietseWind <mail@wietse.com>",
   "dependencies": {
     "JSONStream": "^1.3.2",
+    "express": "*",
     "mongodb": "^3.0.3",
-    "ws": "^4.1.0",
-    "express": "*"
+    "node-fetch": "^2.1.1",
+    "ws": "^4.1.0"
   }
 }

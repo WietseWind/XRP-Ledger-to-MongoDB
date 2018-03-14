@@ -4,6 +4,7 @@ const WebSocket = require('ws')
 const ws = new WebSocket('ws://127.0.0.1')
 const MongoClient = require('mongodb').MongoClient
 const express = require('express')
+const fetch = require('node-fetch')
 const decimals = 1000000
 const max_processing_seconds = 25
 
@@ -46,6 +47,36 @@ router.route('/escrowlist').get(function(req, res) {
   }).toArray((err, data) => {
     res.json(data)
   })
+})
+
+router.route('/prtg').get(function(req, res) {
+    fetch('https://ledger.exposed/api/richlist').then((r) => {
+        return r.json()
+    }).then((r) => {
+        let output = { prtg: { result: [] } }
+        Object.keys(r.has).forEach((f) => {
+            output.prtg.result.push({
+              channel: "# Accounts @ " + (parseInt(f.substring(3)) / 1000) + 'k+',
+              value: r.has[f].accounts,
+              CustomUnit: '#'
+            })
+            output.prtg.result.push({
+              channel: "Balance @ " + (parseInt(f.substring(3)) / 1000) + 'k+',
+              value: Math.floor(r.has[f].balanceSum),
+              CustomUnit: 'XRP'
+            })
+        })
+        Object.keys(r.pct).forEach((f) => {
+            if (f.match(/^pct[0-9]+$/)) {
+                output.prtg.result.push({
+                  channel: "XRP required for " + parseInt(f.substring(3)) + '%',
+                  value: Math.ceil(r.pct[f]),
+                  CustomUnit: 'XRP'
+                })
+            }
+        })
+        res.json(output)
+    })
 })
 
 router.route('/wallet-toplist/:amount?/:skip?').get(function(req, res) {
