@@ -11,13 +11,17 @@ let ledger = null
 
 ws.on('message', function incoming (data) {
   const r = JSON.parse(data)
-  ledger = r
-  console.log('WS Message # coins', ledger.result.closed.ledger.total_coins)
+  if (typeof r === 'object' && typeof r.result === 'object' && typeof r.result.closed === 'object') {
+    ledger = r
+    console.log('WS Message # coins', ledger.result.closed.ledger.total_coins)
+  } else {
+    console.log('WS Message', r)
+  }
 })
 
 ws.on('open', function () {
   console.log('WS Connected')
-  setTimeout(() => { 
+  setInterval(() => { 
     try {
       ws.send(JSON.stringify({ command: 'ledger', full: false, expand: false, transactions: false, accounts: false }))
     } catch (e) {
@@ -135,7 +139,7 @@ router.route('/richlist').get(function(req, res) {
     message: '',
     accounts: 0,
     datamoment: '',
-    totalCoins: ledger.result.closed.ledger.total_coins,
+    totalCoins: parseInt(ledger.result.closed.ledger.total_coins),
     has: {
       has1000000000: null,
       has500000000: null,
