@@ -7,6 +7,24 @@ const express = require('express')
 const fetch = require('node-fetch')
 const decimals = 1000000
 const max_processing_seconds = 25
+let ledger = null
+
+ws.on('message', function incoming (data) {
+  const r = JSON.parse(data)
+  ledger = r
+  console.log('WS Message # coins', ledger.result.closed.ledger.total_coins)
+})
+
+ws.on('open', function () {
+  console.log('WS Connected')
+  setTimeout(() => { 
+    try {
+      ws.send(JSON.stringify({ command: 'ledger', full: false, expand: false, transactions: false, accounts: false }))
+    } catch (e) {
+      console.log('WS error', e)
+    }
+  }, 10 * 1000)
+})
 
 var allowCrossDomain = function(req, res, next) {
     res.header('Access-Control-Allow-Origin', '*')
@@ -117,6 +135,7 @@ router.route('/richlist').get(function(req, res) {
     message: '',
     accounts: 0,
     datamoment: '',
+    totalCoins: ledger.result.closed.ledger.total_coins,
     has: {
       has1000000000: null,
       has500000000: null,
