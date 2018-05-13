@@ -157,6 +157,7 @@ router.route('/richlist').get(function(req, res) {
       has5000: null,
       has1000: null,
       has500: null,
+      has20: null,
       has0: null
     },
     pct: {
