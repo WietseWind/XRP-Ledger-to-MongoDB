@@ -6,7 +6,7 @@ const MongoClient = require('mongodb').MongoClient
 const express = require('express')
 const fetch = require('node-fetch')
 const decimals = 1000000
-const max_processing_seconds = 25
+const max_processing_seconds = 60
 let ledger = null
 
 ws.on('message', function incoming (data) {
