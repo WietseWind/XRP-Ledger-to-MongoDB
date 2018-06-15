@@ -130,6 +130,128 @@ router.route('/wallet-toplist/:amount?/:skip?').get(function(req, res) {
   })
 })
 
+const richlistSpark = () => {
+  let dt = new Date()
+  dt.setTime(dt.getTime() - (3 * 28 * 24 * 60 * 60 * 1000)) // 3 months of 28 days
+  return db.collection('richstats').aggregate([
+    {
+      $match: {
+        'meta.ledgerClosedAt': { '$gte': dt }
+      }
+    },
+    {
+      $sort: {
+        "meta.ledgerClosedAt": -1
+      }
+    },
+    {
+      $project: {
+          index: "$meta.ledgerIndex",
+          moment: "$meta.ledgerClosedAt",
+          percentage: "$accountPercentageBalance"
+      }
+    },
+    {
+      $unwind: {
+          path : "$percentage"
+      }
+    },
+    {
+      $project: {
+          _id: false,
+          index: true,
+          moment: { $dateToString: {
+            format: "%Y-%m-%d",
+            date: "$moment",
+            timezone: 'Europe/Amsterdam'
+          } },
+          percentage: "$percentage.percentage",
+          accounts: "$percentage.numberAccounts",
+          balanceEqGt: "$percentage.balanceEqGt"
+      }
+    },
+    {
+      $group: {
+          _id: {
+            date: "$moment",
+            percentage: "$percentage"
+          },
+          index: { $max: "$index" },
+          accounts: { $max: "$accounts" },
+          balanceEqGt: { $min: "$balanceEqGt" }
+      }
+    },
+    {
+      $sort: {
+          '_id.date': -1,
+          '_id.percentage': 1
+      }
+    },
+    {
+      $group: {
+        _id: "$_id.date",
+        data: { $push: {
+          index: "$index",
+          balanceEqGt: "$balanceEqGt",
+          percentage: "$_id.percentage",
+          accounts: "$accounts"
+        } }
+      }
+    }
+  ]).sort({
+    _id: 1
+  })
+}
+
+router.route('/richlist-trend').get(function(req, res) {
+  richlistSpark().toArray(function(error, d) {
+    if (typeof d !== 'undefined' && d !== null && d.length > 0) {
+      let results = {}
+      d.forEach(i => {
+        let r = i._id.replace(/-/g, '')
+        results[r] = {}
+        i.data.forEach(j => {
+          results[r][parseFloat(j.percentage) * 100] = j
+        })
+      })
+      res.json(results)
+    } else {
+      res.json([])
+    }
+  })
+})
+
+router.route('/richlist-spark').get(function(req, res) {
+  richlistSpark().toArray(function(error, d) {
+    if (typeof d !== 'undefined' && d !== null && d.length > 0) {
+      let results = {}
+      d[0].data.forEach(i => {
+        let values = []
+        d.forEach(r => {
+          let record = r.data.filter(l => {
+            return l.percentage === i.percentage
+          })
+          if (record.length > 0) {
+            values.push({
+              date: r._id,
+              balanceEqGt: record[0].balanceEqGt,
+              accounts: record[0].accounts,
+            })
+          }
+        })
+        results[parseFloat(i.percentage) * 100] = {
+          date: values.map(r => { return r.date }),
+          accounts: values.map(r => { return r.accounts }),
+          balanceEqGt: values.map(r => { return r.balanceEqGt })
+        }
+      })
+      res.json(results)
+    } else {
+      res.json([])
+    }
+  })
+})
+
 router.route('/richlist').get(function(req, res) {
   var responseSent = false
   var requested = 0
