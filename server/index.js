@@ -342,7 +342,7 @@ router.route('/richlist').get(function(req, res) {
     if (f.match(/^has[0-9]+$/)) {
       var amount = parseInt(f.substring(3))
       var query = {
-        Balance: { $gte: amount }
+        Balance: { $gt: amount }
       }
       if (lastMax !== null) {
         query.Balance.$lt = lastMax
