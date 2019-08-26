@@ -107,25 +107,29 @@ router.route('/wallet-toplist/:amount?/:skip?').get(function(req, res) {
 
   if (typeof req.params.amount !== 'undefined' && req.params.amount && req.params.amount !== null) {
     amount = parseInt(req.params.amount)
-    if (isNaN(amount) || amount > 999 || amount < 1) {
-      amount = 10
+    if (isNaN(amount) || amount < 1) {
+      amount = 0
     }
   }
 
   if (typeof req.params.skip !== 'undefined' && req.params.skip && req.params.skip !== null) {
     skip = parseInt(req.params.skip)
-    if (isNaN(skip) || skip > 999) {
+    if (isNaN(skip)) {
       skip = 0
     }
   }
 
-  collection.find({}).sort({
+  collection.find({
+    Balance: {'$gte': amount, '$lt': skip}
+  }).sort({
     Balance: -1
   }).project({
     _id: false,
     Balance: true,
     Account: true
-  }).skip(skip).limit(amount).toArray((err, data) => {
+  })
+  // .skip(skip).limit(amount)
+  .toArray((err, data) => {
     res.json(data)
   })
 })
