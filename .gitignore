@@ -11,3 +11,6 @@ watch.sh
 /server/run.log
 /server/dev.js
 /cleanup.sh
+/latest_*.json
+/latest_*.csv
+

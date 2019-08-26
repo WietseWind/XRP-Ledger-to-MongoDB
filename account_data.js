@@ -6,9 +6,9 @@ const ws = new WebSocket('ws://127.0.0.1')
 const MongoClient = require('mongodb').MongoClient
 
 setTimeout(function () {
-  // Kill after 10 minutes on hang
+  // Kill after 30 minutes on hang
   process.exit(1)
-}, 60 * 1000 * 10)
+}, 60 * 1000 * 30)
 
 var db = null
 var mongo = null
@@ -52,6 +52,8 @@ ws.on('open', function open () {
   })
 })
  
+let dbwriting = 0
+
 ws.on('message', function incoming (data) {
   const r = JSON.parse(data)
   var req = {
@@ -71,6 +73,7 @@ ws.on('message', function incoming (data) {
       if (r.result.state !== null) {
         r.result.state.forEach((i) => {
           transformStream.write(i)
+	dbwriting++
           collection.findAndModify({
             Account: i.Account
           }, [
@@ -82,10 +85,12 @@ ws.on('message', function incoming (data) {
           }, function (err, result) {
             if (err) console.log(err)
             // Mongo done.
+		dbwriting--
           })
           records++
         })
-        console.log('#', r.result.state.length, records)
+        console.log('#', r.result.state.length, records, 'DBWriting: ' + dbwriting)
+//        console.log(process.memoryUsage())
       }
       
       if (calls % 1000 === 0) {
