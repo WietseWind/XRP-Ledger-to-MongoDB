@@ -102,8 +102,13 @@ router.route('/prtg').get(function(req, res) {
 })
 
 router.route('/wallet-toplist/:amount?/:skip?').get(function(req, res) {
-  var amount = 0
-  var skip = 0
+  let amount = 0
+  let skip = 0
+  let nb = true
+
+  if (req.params.amount === '100' && req.params.skip === '0') {
+    nb = false
+  }
 
   if (typeof req.params.amount !== 'undefined' && req.params.amount && req.params.amount !== null) {
     amount = parseInt(req.params.amount)
@@ -119,19 +124,30 @@ router.route('/wallet-toplist/:amount?/:skip?').get(function(req, res) {
     }
   }
 
-  collection.find({
-    Balance: {'$gte': amount, '$lt': skip}
-  }).sort({
+  let q = {}
+  if (nb) {
+    q = {
+      Balance: {'$gte': amount, '$lt': skip}
+    }
+  }
+
+  const r = collection.find(q).sort({
     Balance: -1
   }).project({
     _id: false,
     Balance: true,
     Account: true
   })
-  // .skip(skip).limit(amount)
-  .toArray((err, data) => {
-    res.json(data)
-  })
+
+  if (nb) {
+    r.toArray((err, data) => {
+      res.json(data)
+    })
+  } else {
+    r.skip(skip).limit(amount).toArray((err, data) => {
+      res.json(data)
+    })
+  }
 })
 
 const richlistSpark = () => {
